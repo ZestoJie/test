@@ -1,5 +1,5 @@
 /backend/ems/src/main/resources/terminal71-ems-firebase-adminsdk-*.json
-
+backend/ems/src/main/resources/terminal71-ems-firebase-adminsdk-fbsvc-6da342a03c.json
 # Ignore Maven build output
 /backend/ems/target/
 
