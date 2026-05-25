@@ -1,7 +1,6 @@
 import { ref, set, get, update, remove, onValue } from "firebase/database";
 import { rtdb } from "../firebase";
 
-// Set data in Realtime Database
 export const setRealtimeData = async (path: string, data: any) => {
   try {
     await set(ref(rtdb, path), data);
@@ -12,7 +11,6 @@ export const setRealtimeData = async (path: string, data: any) => {
   }
 };
 
-// Get data from Realtime Database (one-time read)
 export const getRealtimeData = async (path: string) => {
   try {
     const snapshot = await get(ref(rtdb, path));
@@ -75,10 +73,9 @@ export const subscribeToRealtimeData = (
     },
   );
 
-  return unsubscribe; // Return function to unsubscribe
+  return unsubscribe;
 };
 
-// Batch write operations
 export const batchRealtimeUpdate = async (updates: { [path: string]: any }) => {
   try {
     const promises = Object.entries(updates).map(([path, value]) =>

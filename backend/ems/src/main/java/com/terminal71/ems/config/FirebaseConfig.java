@@ -30,10 +30,16 @@ public class FirebaseConfig {
 
             if (svcPath != null && !svcPath.isBlank()) {
                 try {
-                    serviceAccount = new java.io.FileInputStream(svcPath);
-                    log.info("Loading Firebase service account from env path");
+                    // If the env var contains JSON (secret manager provided value), use it directly
+                    if (svcPath.trim().startsWith("{")) {
+                        serviceAccount = new java.io.ByteArrayInputStream(svcPath.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                        log.info("Loading Firebase service account from env JSON value");
+                    } else {
+                        serviceAccount = new java.io.FileInputStream(svcPath);
+                        log.info("Loading Firebase service account from env path");
+                    }
                 } catch (Exception e) {
-                    log.warn("Failed to open service account from env path, will try classpath", e);
+                    log.warn("Failed to open service account from env var, will try classpath", e);
                 }
             }
 
@@ -69,4 +75,3 @@ public class FirebaseConfig {
         return FirebaseDatabase.getInstance();
     }
 }
-

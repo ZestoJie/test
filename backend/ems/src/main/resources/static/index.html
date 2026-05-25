@@ -1,127 +1,14 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>EMS Prototype</title>
-  <style>
-    body{font-family:Segoe UI,Roboto,Arial;margin:24px}
-    pre{background:#f4f4f4;padding:12px;border-radius:6px}
-    button{padding:8px 12px;margin:6px}
-  </style>
-</head>
-<body>
-  <h1>EMS Prototype</h1>
-  <p>This is a minimal static frontend served by the backend for quick testing.</p>
-
-  <section style="max-width:720px">
-    <h2>Sign In</h2>
-    <div>
-      <label>Name: <input id="signinName" placeholder="Alice" /></label>
-      <button id="signinBtn">Sign In</button>
-      <button id="signoutBtn" style="display:none">Sign Out</button>
-    </div>
-    <div id="currentUser" style="margin-top:8px">Not signed in</div>
-
-    <h3 style="margin-top:18px">Create Account</h3>
-    <div>
-      <label>Name: <input id="signupName" /></label>
-      <label style="margin-left:8px">Role: <input id="signupRole" value="Employee" /></label>
-      <button id="signupBtn">Sign Up</button>
-    </div>
-
-    <hr />
-
-    <button id="pingBtn">Check API Health</button>
-    <pre id="pingResult">-</pre>
-
-    <button id="usersBtn">Load Users</button>
-    <pre id="usersResult">-</pre>
-  </section>
-
-  <script>
-    const API_BASE = 'http://localhost:8081/api';
-    const pingBtn = document.getElementById('pingBtn');
-    const usersBtn = document.getElementById('usersBtn');
-    const signinBtn = document.getElementById('signinBtn');
-    const signoutBtn = document.getElementById('signoutBtn');
-
-    async function fetchJson(path, options) {
-      const res = await fetch(`${API_BASE}${path}`, options);
-      const text = await res.text();
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status} ${res.statusText}: ${text}`);
-      }
-      if (!text) {
-        throw new Error('Empty response body from API');
-      }
-      try {
-        return JSON.parse(text);
-      } catch (error) {
-        throw new Error(`Response is not valid JSON: ${text}`);
-      }
-    }
-
-    async function ping() {
-      try {
-        const json = await fetchJson('/ping');
-        document.getElementById('pingResult').textContent = JSON.stringify(json, null, 2);
-      } catch (e) {
-        document.getElementById('pingResult').textContent = String(e);
-      }
-    }
-
-    async function loadUsers() {
-      try {
-        const json = await fetchJson('/users');
-        document.getElementById('usersResult').textContent = JSON.stringify(json, null, 2);
-        return json;
-      } catch (e) {
-        document.getElementById('usersResult').textContent = String(e);
-        return [];
-      }
-    }
-
-    pingBtn.addEventListener('click', ping);
-    usersBtn.addEventListener('click', loadUsers);
-
-    function setCurrentUser(u) {
-      const el = document.getElementById('currentUser');
-      if (!u) { el.textContent = 'Not signed in'; signoutBtn.style.display = 'none'; return; }
-      el.textContent = `Signed in: ${u.name} (id=${u.id}, role=${u.role})`;
-      signoutBtn.style.display = 'inline-block';
-    }
-
-    // Persistent session in localStorage (prototype only)
-    const LS_KEY = 'ems_prototype_user';
-    const saved = localStorage.getItem(LS_KEY);
-    if(saved){ try{ setCurrentUser(JSON.parse(saved)); }catch{} }
-
-    signinBtn.addEventListener('click', async ()=>{
-      const name = document.getElementById('signinName').value.trim();
-      if(!name){ alert('Enter a name to sign in'); return; }
-      const users = await loadUsers();
-      const found = users.find(u => u.name.toLowerCase() === name.toLowerCase());
-      if(found){ localStorage.setItem(LS_KEY, JSON.stringify(found)); setCurrentUser(found); alert('Signed in'); }
-      else{ if(confirm('User not found. Create a new account?')){ document.getElementById('signupName').value = name; document.getElementById('signupRole').focus(); } }
-    });
-
-    signoutBtn.addEventListener('click', ()=>{ localStorage.removeItem(LS_KEY); setCurrentUser(null); alert('Signed out'); });
-
-    document.getElementById('signupBtn').addEventListener('click', async ()=>{
-      const name = document.getElementById('signupName').value.trim();
-      const role = document.getElementById('signupRole').value.trim() || 'Employee';
-      if(!name){ alert('Enter a name for signup'); return; }
-      try{
-        const payload = { name, role, stars: 0 };
-        const res = await fetch(`${API_BASE}/users`, { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
-        const u = await res.json();
-        localStorage.setItem(LS_KEY, JSON.stringify(u));
-        setCurrentUser(u);
-        alert('Account created and signed in');
-        loadUsers();
-      }catch(e){ alert('Signup failed: '+e); }
-    });
-  </script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>frontend</title>
+    <script type="module" crossorigin src="/assets/index-DFMw7nPK.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-Ch9eZn3x.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
 </html>

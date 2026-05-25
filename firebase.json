@@ -1,13 +1,20 @@
 {
   "hosting": {
-    "public": "frontend/dist",
+    "public": "backend/ems/src/main/resources/static",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [
+      {
+        "source": "/api/auth/**",
+        "function": "api"
+      },
       {
         "source": "**",
         "destination": "/index.html"
       }
     ],
-    "predeploy": ["npm --prefix frontend run build"]
+    "predeploy": [
+      "npm --prefix frontend run build",
+      "node scripts/copy-frontend-to-backend.js"
+    ]
   }
 }
