@@ -24,22 +24,37 @@ public class FirebaseConfig {
     @PostConstruct
     public void initialize() {
         try {
-            // Prefer service account path provided via env var so credentials are not stored in the repo.
+            // Prefer service account provided via env var so credentials are not stored in the repo.
+            // Support two options:
+            // 1) FIREBASE_SERVICE_ACCOUNT — either raw JSON text or a filesystem path
+            // 2) FIREBASE_SERVICE_ACCOUNT_B64 — a base64-encoded JSON string (single-line, safe for CLI)
             String svcPath = System.getenv("FIREBASE_SERVICE_ACCOUNT");
+            String svcB64 = System.getenv("FIREBASE_SERVICE_ACCOUNT_B64");
             InputStream serviceAccount = null;
 
-            if (svcPath != null && !svcPath.isBlank()) {
+            // If a base64 secret is provided, decode it first (useful for CLI single-line secrets)
+            if (svcB64 != null && !svcB64.isBlank()) {
+                try {
+                    byte[] decoded = java.util.Base64.getDecoder().decode(svcB64.trim());
+                    serviceAccount = new java.io.ByteArrayInputStream(decoded);
+                    log.info("Loading Firebase service account from FIREBASE_SERVICE_ACCOUNT_B64 env (decoded)");
+                } catch (Exception e) {
+                    log.warn("Failed to decode FIREBASE_SERVICE_ACCOUNT_B64", e);
+                }
+            }
+
+            if (serviceAccount == null && svcPath != null && !svcPath.isBlank()) {
                 try {
                     // If the env var contains JSON (secret manager provided value), use it directly
                     if (svcPath.trim().startsWith("{")) {
                         serviceAccount = new java.io.ByteArrayInputStream(svcPath.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-                        log.info("Loading Firebase service account from env JSON value");
+                        log.info("Loading Firebase service account from FIREBASE_SERVICE_ACCOUNT env JSON value");
                     } else {
                         serviceAccount = new java.io.FileInputStream(svcPath);
-                        log.info("Loading Firebase service account from env path");
+                        log.info("Loading Firebase service account from FIREBASE_SERVICE_ACCOUNT env path");
                     }
                 } catch (Exception e) {
-                    log.warn("Failed to open service account from env var, will try classpath", e);
+                    log.warn("Failed to open service account from FIREBASE_SERVICE_ACCOUNT env var, will try classpath", e);
                 }
             }
 
