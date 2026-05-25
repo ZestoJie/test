@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { login, register } from "../../api/auth";
+import { register } from "../../api/auth";
 
 export default function Register() {
   const [email, setEmail] = useState("");
@@ -8,7 +8,15 @@ export default function Register() {
 
   const handleRegister = async () => {
     const res = await register(email, password, name);
-    alert("Registered user: " + res.email);
+
+    if (res?.user) {
+      alert(
+        "Registered user: " + (res.user.email ?? res.user.name ?? "unknown"),
+      );
+      return;
+    }
+
+    alert("Registration failed: " + (res?.error || "Unknown error"));
   };
 
   return (

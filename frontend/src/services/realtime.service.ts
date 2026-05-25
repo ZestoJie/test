@@ -1,90 +1,70 @@
-import { ref, set, get, update, remove, onValue } from "firebase/database";
-import { rtdb } from "../firebase";
+import { env } from "../config/env";
+
+const API_BASE_URL = env.apiBaseUrl?.replace(/\/$/, "") || "/api";
+const FIREBASE_RTDB_BASE = `${API_BASE_URL}/api/v1/firebase/rtdb`;
+
+async function requestJson(url: string, options: RequestInit = {}) {
+  const res = await fetch(url, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers ?? {}),
+    },
+  });
+
+  const json = await res.json().catch(() => null);
+  if (!res.ok) {
+    const message = json?.error || res.statusText || "Request failed";
+    throw new Error(message);
+  }
+  return json;
+}
 
 export const setRealtimeData = async (path: string, data: any) => {
-  try {
-    await set(ref(rtdb, path), data);
-    console.log(`Data set successfully at ${path}`);
-  } catch (error) {
-    console.error(`Error setting data at ${path}:`, error);
-    throw error;
-  }
+  await requestJson(`${FIREBASE_RTDB_BASE}/write`, {
+    method: "POST",
+    body: JSON.stringify({ path, data }),
+  });
 };
 
 export const getRealtimeData = async (path: string) => {
-  try {
-    const snapshot = await get(ref(rtdb, path));
-    if (snapshot.exists()) {
-      return snapshot.val();
-    } else {
-      console.log(`No data found at ${path}`);
-      return null;
-    }
-  } catch (error) {
-    console.error(`Error getting data from ${path}:`, error);
-    throw error;
-  }
+  const url = `${FIREBASE_RTDB_BASE}/read/${encodeURI(path)}`;
+  const response = await requestJson(url);
+  return response?.data ?? null;
 };
 
-// Update data in Realtime Database
 export const updateRealtimeData = async (path: string, updates: any) => {
-  try {
-    await update(ref(rtdb, path), updates);
-    console.log(`Data updated successfully at ${path}`);
-  } catch (error) {
-    console.error(`Error updating data at ${path}:`, error);
-    throw error;
-  }
+  await requestJson(`${FIREBASE_RTDB_BASE}/update`, {
+    method: "PUT",
+    body: JSON.stringify({ path, updates }),
+  });
 };
 
-// Delete data from Realtime Database
 export const deleteRealtimeData = async (path: string) => {
-  try {
-    await remove(ref(rtdb, path));
-    console.log(`Data deleted successfully at ${path}`);
-  } catch (error) {
-    console.error(`Error deleting data at ${path}:`, error);
-    throw error;
-  }
+  const url = `${FIREBASE_RTDB_BASE}/delete/${encodeURIComponent(path)}`;
+  await requestJson(url, { method: "DELETE" });
 };
 
-// Subscribe to real-time updates
 export const subscribeToRealtimeData = (
   path: string,
   callback: (data: any) => void,
   errorCallback?: (error: any) => void,
 ) => {
-  const dbRef = ref(rtdb, path);
+  const interval = window.setInterval(async () => {
+    try {
+      const data = await getRealtimeData(path);
+      callback(data);
+    } catch (error) {
+      if (errorCallback) errorCallback(error);
+    }
+  }, 3000);
 
-  const unsubscribe = onValue(
-    dbRef,
-    (snapshot) => {
-      if (snapshot.exists()) {
-        callback(snapshot.val());
-      } else {
-        callback(null);
-      }
-    },
-    (error) => {
-      console.error(`Error subscribing to ${path}:`, error);
-      if (errorCallback) {
-        errorCallback(error);
-      }
-    },
-  );
-
-  return unsubscribe;
+  return () => window.clearInterval(interval);
 };
 
 export const batchRealtimeUpdate = async (updates: { [path: string]: any }) => {
-  try {
-    const promises = Object.entries(updates).map(([path, value]) =>
-      set(ref(rtdb, path), value),
-    );
-    await Promise.all(promises);
-    console.log("Batch update completed successfully");
-  } catch (error) {
-    console.error("Error in batch update:", error);
-    throw error;
-  }
+  const promises = Object.entries(updates).map(([path, value]) =>
+    setRealtimeData(path, value),
+  );
+  await Promise.all(promises);
 };

@@ -20,7 +20,7 @@ function keyForEmail(email) {
   return encodeURIComponent(String(email).toLowerCase());
 }
 
-app.post("/register", async (req, res) => {
+app.post("/api/auth/register", async (req, res) => {
   try {
     const { email, password, name, role } = req.body;
     if (!email || !password)
@@ -50,7 +50,7 @@ app.post("/register", async (req, res) => {
   }
 });
 
-app.post("/login", async (req, res) => {
+app.post("/api/auth/login", async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password)

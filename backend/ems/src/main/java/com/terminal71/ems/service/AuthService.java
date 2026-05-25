@@ -4,9 +4,9 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -25,8 +25,8 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    public AuthService(@Autowired(required = false) FirebaseRealtimeService rtdb) {
-        this.rtdb = rtdb;
+    public AuthService(FirebaseRealtimeService rtdb) {
+        this.rtdb = Objects.requireNonNull(rtdb, "FirebaseRealtimeService must be available");
 
         String secret = System.getenv()
                 .getOrDefault("JWT_SECRET", "dev-secret-change-me");
@@ -39,9 +39,7 @@ public class AuthService {
     }
 
     public UserDto register(String email, String password, String name, String role) {
-        if (rtdb == null) {
-            throw new IllegalStateException("Firebase is not available. Cannot register user.");
-}
+        log.info("Register called for email={} name={} role={}", email, name, role);
         if (!StringUtils.hasText(email) || !StringUtils.hasText(password)) {
             throw new IllegalArgumentException("email and password required");
         }
@@ -77,6 +75,7 @@ public class AuthService {
 
     @SuppressWarnings("unchecked")
     public Map<String, Object> login(String email, String password) {
+        log.info("Login called for email={}", email);
         try {
             String key = "auth/users/" + keyForEmail(email);
             var snap = rtdb.readData(key).get();

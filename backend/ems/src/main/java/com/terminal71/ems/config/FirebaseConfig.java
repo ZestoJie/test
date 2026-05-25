@@ -6,7 +6,7 @@ import java.io.InputStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
@@ -61,8 +61,20 @@ public class FirebaseConfig {
             }
 
             if (serviceAccount == null) {
-                ClassPathResource res = new ClassPathResource("terminal71-ems-firebase-adminsdk-fbsvc-284681596a.json");
-                if (!res.exists()) {
+                // Try known filename(s) on classpath. Accept whichever is present.
+                String[] candidateFiles = new String[] {
+                    "terminal71-ems-firebase-adminsdk-fbsvc-284681596a.json",
+                    "terminal71-ems-firebase-adminsdk-fbsvc-87187eda10.json"
+                };
+                ClassPathResource res = null;
+                for (String f : candidateFiles) {
+                    ClassPathResource r = new ClassPathResource(f);
+                    if (r.exists()) {
+                        res = r;
+                        break;
+                    }
+                }
+                if (res == null) {
                     log.warn("Firebase service account not found on classpath; skipping Firebase initialization");
                     return;
                 }
@@ -87,7 +99,7 @@ public class FirebaseConfig {
     }
 
     @Bean
-    @ConditionalOnBean(FirebaseApp.class)
+    @ConditionalOnClass(FirebaseApp.class)
     public FirebaseDatabase firebaseDatabase() {
         return FirebaseDatabase.getInstance();
     }

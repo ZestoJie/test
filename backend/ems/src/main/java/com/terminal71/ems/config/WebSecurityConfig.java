@@ -12,24 +12,30 @@ import org.springframework.security.config.Customizer;
 public class WebSecurityConfig {
 
   @Bean
-  public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-    // Read allowed frontend origin from env var; fallback to allow all in dev
-    String frontendOrigin = System.getenv().getOrDefault("FRONTEND_ORIGIN", "");
-
+  public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
+    var cfg = new org.springframework.web.cors.CorsConfiguration();
+    String frontendOrigin = System.getenv().getOrDefault("FRONTEND_ORIGIN", "").trim();
+    var allowedOrigins = new java.util.ArrayList<String>();
     if (frontendOrigin != null && !frontendOrigin.isBlank()) {
-      http.cors(cors -> cors.configurationSource(request -> {
-        var cfg = new org.springframework.web.cors.CorsConfiguration();
-        cfg.setAllowedOrigins(java.util.List.of(frontendOrigin));
-        cfg.setAllowedMethods(java.util.List.of("GET","POST","PUT","DELETE","OPTIONS"));
-        cfg.setAllowedHeaders(java.util.List.of("*"));
-        cfg.setAllowCredentials(true);
-        return cfg;
-      }));
-    } else {
-      http.cors(Customizer.withDefaults());
+      allowedOrigins.add(frontendOrigin);
     }
+    allowedOrigins.add("https://terminal71-ems.web.app");
+    allowedOrigins.add("http://localhost:5173");
+    allowedOrigins.add("http://127.0.0.1:5173");
+    cfg.setAllowedOrigins(allowedOrigins);
+    cfg.setAllowedOriginPatterns(java.util.List.of("*"));
+    cfg.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+    cfg.setAllowedHeaders(java.util.List.of("*"));
+    cfg.setAllowCredentials(false);
+    var source = new org.springframework.web.cors.UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/**", cfg);
+    return source;
+  }
 
-    http.csrf(csrf -> csrf.disable())
+  @Bean
+  public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    http.cors(Customizer.withDefaults())
+        .csrf(csrf -> csrf.disable())
         .authorizeHttpRequests(authz -> authz.requestMatchers("/api/**").permitAll().anyRequest().permitAll());
     return http.build();
   }
