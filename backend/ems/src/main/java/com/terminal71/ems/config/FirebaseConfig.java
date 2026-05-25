@@ -1,5 +1,7 @@
 package com.terminal71.ems.config;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 
 import org.slf4j.Logger;
@@ -53,7 +55,7 @@ public class FirebaseConfig {
                         serviceAccount = new java.io.FileInputStream(svcPath);
                         log.info("Loading Firebase service account from FIREBASE_SERVICE_ACCOUNT env path");
                     }
-                } catch (Exception e) {
+                } catch (FileNotFoundException e) {
                     log.warn("Failed to open service account from FIREBASE_SERVICE_ACCOUNT env var, will try classpath", e);
                 }
             }
@@ -79,7 +81,7 @@ public class FirebaseConfig {
                 }
             }
 
-        } catch (Exception e) {
+        } catch (IOException e) {
             log.warn("Failed to initialize Firebase SDK, continuing without it", e);
         }
     }

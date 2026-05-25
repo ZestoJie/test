@@ -2,8 +2,7 @@ package com.terminal71.ems.service;
 
 import com.terminal71.ems.dto.UserDto;
 import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -13,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 
 @Service("firebaseUserService")
 @ConditionalOnBean(FirebaseRealtimeService.class)
@@ -33,15 +33,14 @@ public class FirebaseUserService implements UserService {
             if (snapshot != null && snapshot.exists()) {
                 for (DataSnapshot child : snapshot.getChildren()) {
                     Object val = child.getValue();
-                    if (val instanceof Map) {
-                        Map m = (Map) val;
+                    if (val instanceof Map m) {
                         UserDto u = mapToUserDto(m);
                         list.add(u);
                     }
                 }
             }
             return list;
-        } catch (Exception e) {
+        } catch (InterruptedException | ExecutionException e) {
             log.warn("Failed to read users from RTDB, falling back to empty list", e);
             return List.of();
         }
@@ -53,11 +52,11 @@ public class FirebaseUserService implements UserService {
             DataSnapshot snapshot = rtdb.readData("users/" + id).get();
             if (snapshot != null && snapshot.exists()) {
                 Object val = snapshot.getValue();
-                if (val instanceof Map) {
-                    return Optional.of(mapToUserDto((Map) val));
+                if (val instanceof Map map) {
+                    return Optional.of(mapToUserDto(map));
                 }
             }
-        } catch (Exception e) {
+        } catch (InterruptedException | ExecutionException e) {
             log.warn("Failed to read user {} from RTDB", id, e);
         }
         return Optional.empty();
@@ -72,7 +71,7 @@ public class FirebaseUserService implements UserService {
             u.setId(next);
             rtdb.writeData("users/" + next, u).get();
             return u;
-        } catch (Exception e) {
+        } catch (InterruptedException | ExecutionException e) {
             log.error("Failed to write user to RTDB", e);
             throw new RuntimeException(e);
         }
@@ -82,12 +81,12 @@ public class FirebaseUserService implements UserService {
     private UserDto mapToUserDto(Map m) {
         UserDto u = new UserDto();
         Object idObj = m.get("id");
-        if (idObj instanceof Number) u.setId(((Number) idObj).longValue());
+        if (idObj instanceof Number number) u.setId(number.longValue());
         else if (idObj != null) u.setId(Long.valueOf(String.valueOf(idObj)));
         u.setName((String) m.getOrDefault("name", ""));
         u.setRole((String) m.getOrDefault("role", "Employee"));
         Object stars = m.get("stars");
-        if (stars instanceof Number) u.setStars(((Number) stars).intValue());
+        if (stars instanceof Number number) u.setStars(number.intValue());
         else if (stars != null) u.setStars(Integer.parseInt(String.valueOf(stars)));
         return u;
     }

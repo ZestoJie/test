@@ -20,14 +20,19 @@ public class InMemoryUserService implements UserService {
         users.add(new UserDto(2L, "Bob", "Admin", 90));
     }
 
+    
+    @SuppressWarnings("override")
     public List<UserDto> getAll() {
         return users;
     }
 
+    
+    @SuppressWarnings("override")
     public Optional<UserDto> getById(Long id) {
         return users.stream().filter(u -> u.getId().equals(id)).findFirst();
     }
 
+    @SuppressWarnings("override")
     public UserDto add(UserDto u) {
         long next = users.stream().mapToLong(u2 -> u2.getId()).max().orElse(0) + 1;
         u.setId(next);

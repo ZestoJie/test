@@ -4,8 +4,8 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +24,7 @@ public class AuthService {
     private final FirebaseRealtimeService rtdb;
     private final JwtUtil jwtUtil;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-    
+
     public AuthService(@Autowired(required = false) FirebaseRealtimeService rtdb) {
         this.rtdb = rtdb;
 
@@ -69,12 +69,13 @@ public class AuthService {
             return u;
         } catch (RuntimeException re) {
             throw re;
-        } catch (Exception e) {
+        } catch (InterruptedException | ExecutionException e) {
             log.error("Failed to register user", e);
             throw new RuntimeException(e);
         }
     }
 
+    @SuppressWarnings("unchecked")
     public Map<String, Object> login(String email, String password) {
         try {
             String key = "auth/users/" + keyForEmail(email);
@@ -84,7 +85,7 @@ public class AuthService {
             }
             Object val = snap.getValue();
             if (!(val instanceof Map)) throw new IllegalArgumentException("Invalid credentials");
-            Map m = (Map) val;
+            Map<?, String> m = (Map<?, String>) val;
             String hash = (String) m.get("passwordHash");
             if (hash == null || !passwordEncoder.matches(password, hash)) {
                 throw new IllegalArgumentException("Invalid credentials");
@@ -108,7 +109,7 @@ public class AuthService {
             return resp;
         } catch (RuntimeException re) {
             throw re;
-        } catch (Exception e) {
+        } catch (InterruptedException | ExecutionException e) {
             log.error("Login failed", e);
             throw new RuntimeException(e);
         }

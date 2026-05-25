@@ -2,8 +2,8 @@ package com.terminal71.ems.util;
 
 public class ApiResponse<T> {
 
-    private T data;
-    private String message;
+    final private T data;
+    final private String message;
 
     public ApiResponse(T data, String message) {
         this.data = data;
