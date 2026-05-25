@@ -14,7 +14,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-@Service
+@Service("firebaseUserService")
+@ConditionalOnBean(FirebaseRealtimeService.class)
 public class FirebaseUserService implements UserService {
 
     private static final Logger log = LoggerFactory.getLogger(FirebaseUserService.class);

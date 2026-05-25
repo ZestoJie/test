@@ -1,32 +1,36 @@
 package com.terminal71.ems.service;
 
-import com.terminal71.ems.dto.UserDto;
-import com.terminal71.ems.auth.JwtUtil;
-import com.terminal71.ems.service.FirebaseRealtimeService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+
+import com.terminal71.ems.auth.JwtUtil;
+import com.terminal71.ems.dto.UserDto;
+
+
 @Service
 public class AuthService {
 
     private static final Logger log = LoggerFactory.getLogger(AuthService.class);
-
     private final FirebaseRealtimeService rtdb;
     private final JwtUtil jwtUtil;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-
-    public AuthService(FirebaseRealtimeService rtdb) {
+    
+    public AuthService(@Autowired(required = false) FirebaseRealtimeService rtdb) {
         this.rtdb = rtdb;
-        String secret = System.getenv().getOrDefault("JWT_SECRET", "dev-secret-change-me");
+
+        String secret = System.getenv()
+                .getOrDefault("JWT_SECRET", "dev-secret-change-me");
+
         this.jwtUtil = new JwtUtil(secret);
     }
 
@@ -35,6 +39,9 @@ public class AuthService {
     }
 
     public UserDto register(String email, String password, String name, String role) {
+        if (rtdb == null) {
+            throw new IllegalStateException("Firebase is not available. Cannot register user.");
+}
         if (!StringUtils.hasText(email) || !StringUtils.hasText(password)) {
             throw new IllegalArgumentException("email and password required");
         }

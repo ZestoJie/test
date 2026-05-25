@@ -1,13 +1,17 @@
 package com.terminal71.ems.service;
 
 import com.terminal71.ems.dto.UserDto;
+
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.context.annotation.Primary;
+
 @Service
+@Primary
 public class InMemoryUserService implements UserService {
     private final List<UserDto> users = new ArrayList<>();
 

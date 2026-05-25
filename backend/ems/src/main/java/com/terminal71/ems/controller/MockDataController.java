@@ -2,6 +2,9 @@ package com.terminal71.ems.controller;
 
 import com.terminal71.ems.dto.UserDto;
 import com.terminal71.ems.service.InMemoryUserService;
+import com.terminal71.ems.service.UserService;
+
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,9 +17,9 @@ import java.util.Map;
 @RestController
 public class MockDataController {
 
-    private final com.terminal71.ems.service.UserService userService;
+    private final UserService userService;
 
-    public MockDataController(com.terminal71.ems.service.UserService userService) {
+    public MockDataController(UserService userService) {
         this.userService = userService;
     }
 
