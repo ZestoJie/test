@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { subscribeToRealtimeData } from "../services/realtime.service";
 
 interface UseRealtimeDataOptions {
@@ -13,7 +13,7 @@ interface UseRealtimeDataOptions {
  */
 export const useRealtimeData = (
   path: string,
-  options?: UseRealtimeDataOptions
+  options?: UseRealtimeDataOptions,
 ) => {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -39,7 +39,7 @@ export const useRealtimeData = (
         if (options?.onError) {
           options.onError(err);
         }
-      }
+      },
     );
 
     return () => {
@@ -63,16 +63,13 @@ export const useRealtimeDataMultiple = (paths: string[]) => {
     const unsubscribes: (() => void)[] = [];
 
     paths.forEach((path) => {
-      const unsub = subscribeToRealtimeData(
-        path,
-        (data) => {
-          setDataMap((prev) => ({
-            ...prev,
-            [path]: data,
-          }));
-          setLoading(false);
-        }
-      );
+      const unsub = subscribeToRealtimeData(path, (data) => {
+        setDataMap((prev) => ({
+          ...prev,
+          [path]: data,
+        }));
+        setLoading(false);
+      });
       unsubscribes.push(unsub);
     });
 

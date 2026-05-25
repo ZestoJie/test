@@ -1,13 +1,4 @@
-import {
-  ref,
-  set,
-  get,
-  update,
-  remove,
-  onValue,
-  off,
-  DatabaseReference,
-} from "firebase/database";
+import { ref, set, get, update, remove, onValue } from "firebase/database";
 import { rtdb } from "../firebase";
 
 // Set data in Realtime Database
@@ -63,7 +54,7 @@ export const deleteRealtimeData = async (path: string) => {
 export const subscribeToRealtimeData = (
   path: string,
   callback: (data: any) => void,
-  errorCallback?: (error: any) => void
+  errorCallback?: (error: any) => void,
 ) => {
   const dbRef = ref(rtdb, path);
 
@@ -81,7 +72,7 @@ export const subscribeToRealtimeData = (
       if (errorCallback) {
         errorCallback(error);
       }
-    }
+    },
   );
 
   return unsubscribe; // Return function to unsubscribe
@@ -91,7 +82,7 @@ export const subscribeToRealtimeData = (
 export const batchRealtimeUpdate = async (updates: { [path: string]: any }) => {
   try {
     const promises = Object.entries(updates).map(([path, value]) =>
-      set(ref(rtdb, path), value)
+      set(ref(rtdb, path), value),
     );
     await Promise.all(promises);
     console.log("Batch update completed successfully");
