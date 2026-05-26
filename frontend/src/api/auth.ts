@@ -1,46 +1,84 @@
 import { api } from "./client";
-export async function register(email: string, password: string, name: string) {
-  const res = await fetch("/api/auth/register", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password, name, role: "User" }),
-  });
 
-  const text = await res.text();
+let lastLoginTime = 0;
+let loginInFlight = false;
+
+const COOLDOWN_MS = 500; // 2 req/sec
+let registerInFlight = false;
+
+export async function register(email: string, password: string, name: string) {
+  if (registerInFlight) {
+    return { error: "Request already in progress", status: 429 };
+  }
+
+  registerInFlight = true;
 
   try {
-    return JSON.parse(text);
-  } catch {
-    return { error: text };
+    const res = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, name, role: "User" }),
+    });
+
+    const text = await res.text();
+
+    try {
+      return JSON.parse(text);
+    } catch {
+      return { error: text, status: res.status };
+    }
+  } finally {
+    registerInFlight = false;
   }
 }
-
 export async function login(email: string, password: string) {
-  const res = await fetch("/api/auth/login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
-  });
+  const now = Date.now();
 
-  const text = await res.text();
+  // 🚫 cooldown check
+  if (now - lastLoginTime < COOLDOWN_MS) {
+    return {
+      error: "Please wait before trying again.",
+      status: 429,
+    };
+  }
 
-  let data: any;
+  // 🚫 prevent concurrent requests
+  if (loginInFlight) {
+    return {
+      error: "Login already in progress",
+      status: 429,
+    };
+  }
+
+  lastLoginTime = now;
+  loginInFlight = true;
 
   try {
-    data = JSON.parse(text);
-  } catch {
-    // 👇 handles 429 or HTML/plain text errors
-    return {
-      error: text,
-      status: res.status,
-    };
-  }
+    const res = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
 
-  if (!res.ok) {
-    return {
-      error: data?.message || data?.error || "Request failed",
-      status: res.status,
-    };
+    const text = await res.text();
+
+    let data: any;
+
+    try {
+      data = JSON.parse(text);
+    } catch {
+      return { error: text, status: res.status };
+    }
+
+    if (!res.ok) {
+      return {
+        error: data?.message || data?.error || "Request failed",
+        status: res.status,
+      };
+    }
+
+    return data;
+  } finally {
+    loginInFlight = false;
   }
-  return data;
 }
