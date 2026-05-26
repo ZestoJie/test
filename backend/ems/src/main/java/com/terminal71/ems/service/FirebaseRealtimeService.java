@@ -7,20 +7,18 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @Service
-@ConditionalOnBean(FirebaseDatabase.class)
 public class FirebaseRealtimeService {
 
   private static final Logger log = LoggerFactory.getLogger(FirebaseRealtimeService.class);
-  private final FirebaseDatabase firebaseDatabase;
+  private final FirebaseDatabase firebaseDatabase; // may be null when not configured
 
-  public FirebaseRealtimeService(FirebaseDatabase firebaseDatabase) {
+  public FirebaseRealtimeService(@org.springframework.lang.Nullable FirebaseDatabase firebaseDatabase) {
     this.firebaseDatabase = firebaseDatabase;
   }
 
@@ -30,6 +28,9 @@ public class FirebaseRealtimeService {
   public CompletableFuture<Void> writeData(String path, Object data) {
     CompletableFuture<Void> future = new CompletableFuture<>();
     try {
+      if (firebaseDatabase == null) {
+        throw new IllegalStateException("FirebaseDatabase not configured");
+      }
       DatabaseReference ref = firebaseDatabase.getReference(path);
       ref.setValue(data, (error, ref1) -> {
         if (error != null) {
@@ -53,6 +54,9 @@ public class FirebaseRealtimeService {
   public CompletableFuture<DataSnapshot> readData(String path) {
     CompletableFuture<DataSnapshot> future = new CompletableFuture<>();
     try {
+      if (firebaseDatabase == null) {
+        throw new IllegalStateException("FirebaseDatabase not configured");
+      }
       DatabaseReference ref = firebaseDatabase.getReference(path);
       ref.addListenerForSingleValueEvent(new ValueEventListener() {
         @Override
@@ -80,6 +84,9 @@ public class FirebaseRealtimeService {
   public CompletableFuture<Void> updateData(String path, Map<String, Object> updates) {
     CompletableFuture<Void> future = new CompletableFuture<>();
     try {
+      if (firebaseDatabase == null) {
+        throw new IllegalStateException("FirebaseDatabase not configured");
+      }
       DatabaseReference ref = firebaseDatabase.getReference(path);
       ref.updateChildren(updates, (error, ref1) -> {
         if (error != null) {
@@ -103,6 +110,9 @@ public class FirebaseRealtimeService {
   public CompletableFuture<Void> deleteData(String path) {
     CompletableFuture<Void> future = new CompletableFuture<>();
     try {
+      if (firebaseDatabase == null) {
+        throw new IllegalStateException("FirebaseDatabase not configured");
+      }
       DatabaseReference ref = firebaseDatabase.getReference(path);
       ref.removeValue((error, ref1) -> {
         if (error != null) {
@@ -124,6 +134,7 @@ public class FirebaseRealtimeService {
    * Get reference to a path in the database
    */
   public DatabaseReference getReference(String path) {
+    if (firebaseDatabase == null) throw new IllegalStateException("FirebaseDatabase not configured");
     return firebaseDatabase.getReference(path);
   }
 
@@ -131,6 +142,7 @@ public class FirebaseRealtimeService {
    * Get the root reference
    */
   public DatabaseReference getRootReference() {
+    if (firebaseDatabase == null) throw new IllegalStateException("FirebaseDatabase not configured");
     return firebaseDatabase.getReference();
   }
 }

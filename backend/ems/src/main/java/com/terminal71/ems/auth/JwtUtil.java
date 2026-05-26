@@ -37,4 +37,27 @@ public class JwtUtil {
         else if (v instanceof Boolean aBoolean) builder.withClaim(k, aBoolean);
         else builder.withClaim(k, String.valueOf(v));
     }
+
+    public com.auth0.jwt.interfaces.DecodedJWT verifyToken(String token) {
+        return com.auth0.jwt.JWT.require(algorithm).build().verify(token);
+    }
+
+    public java.util.Map<String, Object> extractClaims(String token) {
+        var decoded = verifyToken(token);
+        var claims = new java.util.HashMap<String, Object>();
+        decoded.getClaims().forEach((k, c) -> {
+            try {
+                Object v = null;
+                if (c.asBoolean() != null) v = c.asBoolean();
+                else if (c.asLong() != null) v = c.asLong();
+                else if (c.asInt() != null) v = c.asInt();
+                else if (c.asString() != null) v = c.asString();
+                else v = c.toString();
+                claims.put(k, v);
+            } catch (Exception ex) {
+                claims.put(k, c.toString());
+            }
+        });
+        return claims;
+    }
 }

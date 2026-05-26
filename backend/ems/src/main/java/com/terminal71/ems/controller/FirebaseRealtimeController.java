@@ -1,20 +1,28 @@
 package com.terminal71.ems.controller;
 
-import com.terminal71.ems.service.FirebaseRealtimeService;
-import com.google.firebase.database.FirebaseDatabase;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import jakarta.servlet.http.HttpServletRequest;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.google.firebase.database.FirebaseDatabase;
+import com.terminal71.ems.service.FirebaseRealtimeService;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 @RestController
 @ConditionalOnBean(FirebaseDatabase.class)
 @RequestMapping("/api/v1/firebase/rtdb")
-@CrossOrigin(origins = "*", allowedHeaders = "*")
 public class FirebaseRealtimeController {
 
   private final FirebaseRealtimeService firebaseRealtimeService;

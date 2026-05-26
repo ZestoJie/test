@@ -17,6 +17,7 @@ import com.google.firebase.FirebaseOptions;
 import com.google.firebase.database.FirebaseDatabase;
 
 import jakarta.annotation.PostConstruct;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 
 @Configuration
 public class FirebaseConfig {
@@ -100,7 +101,20 @@ public class FirebaseConfig {
 
     @Bean
     @ConditionalOnClass(FirebaseApp.class)
+    public com.google.firebase.FirebaseApp firebaseAppBean() {
+        if (FirebaseApp.getApps().isEmpty()) {
+            log.warn("No FirebaseApp instances present; firebaseApp bean will not be created");
+            return null;
+        }
+        return FirebaseApp.getInstance();
+    }
+
+    @Bean
     public FirebaseDatabase firebaseDatabase() {
+        if (FirebaseApp.getApps().isEmpty()) {
+            log.warn("No FirebaseApp initialized; not creating FirebaseDatabase bean");
+            return null;
+        }
         return FirebaseDatabase.getInstance();
     }
 }

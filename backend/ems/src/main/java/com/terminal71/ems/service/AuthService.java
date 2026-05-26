@@ -21,16 +21,24 @@ import com.terminal71.ems.dto.UserDto;
 public class AuthService {
 
     private static final Logger log = LoggerFactory.getLogger(AuthService.class);
-    private final FirebaseRealtimeService rtdb;
+    private final java.util.Optional<FirebaseRealtimeService> rtdb;
     private final JwtUtil jwtUtil;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
+    // lightweight in-memory fallback for local/dev when Firebase is not configured
+    private final java.util.concurrent.ConcurrentMap<String, Map<String, Object>> inMemoryUsers = new java.util.concurrent.ConcurrentHashMap<>();
+
     public AuthService(FirebaseRealtimeService rtdb) {
-        this.rtdb = Objects.requireNonNull(rtdb, "FirebaseRealtimeService must be available");
+        this.rtdb = java.util.Optional.ofNullable(rtdb);
 
-        String secret = System.getenv()
-                .getOrDefault("JWT_SECRET", "dev-secret-change-me");
-
+        String secret = System.getenv("JWT_SECRET");
+        if (secret == null || secret.isBlank()) {
+            // For developer convenience, generate a temporary secret but warn loudly.
+            byte[] b = new byte[32];
+            new java.security.SecureRandom().nextBytes(b);
+            secret = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(b);
+            log.warn("JWT_SECRET not set — generated temporary runtime secret. Set JWT_SECRET in env for persistent tokens and production.");
+        }
         this.jwtUtil = new JwtUtil(secret);
     }
 
@@ -45,26 +53,45 @@ public class AuthService {
         }
         try {
             String key = "auth/users/" + keyForEmail(email);
-            var existing = rtdb.readData(key).get();
-            if (existing != null && existing.exists()) {
-                throw new IllegalStateException("User already exists");
+            if (rtdb.isPresent()) {
+                var existing = rtdb.get().readData(key).get();
+                if (existing != null && existing.exists()) {
+                    throw new IllegalStateException("User already exists");
+                }
+
+                String hash = passwordEncoder.encode(password);
+                Map<String, Object> payload = new HashMap<>();
+                payload.put("email", email);
+                payload.put("passwordHash", hash);
+                payload.put("name", name == null ? "" : name);
+                payload.put("role", role == null ? "User" : role);
+                payload.put("id", System.currentTimeMillis());
+
+                rtdb.get().writeData(key, payload).get();
+
+                UserDto u = new UserDto();
+                u.setId(((Long) payload.get("id")));
+                u.setName((String) payload.get("name"));
+                u.setRole((String) payload.get("role"));
+                return u;
+            } else {
+                // local in-memory fallback
+                if (inMemoryUsers.containsKey(key)) throw new IllegalStateException("User already exists");
+                String hash = passwordEncoder.encode(password);
+                Map<String, Object> payload = new HashMap<>();
+                payload.put("email", email);
+                payload.put("passwordHash", hash);
+                payload.put("name", name == null ? "" : name);
+                payload.put("role", role == null ? "User" : role);
+                payload.put("id", System.currentTimeMillis());
+                inMemoryUsers.put(key, payload);
+
+                UserDto u = new UserDto();
+                u.setId(((Long) payload.get("id")));
+                u.setName((String) payload.get("name"));
+                u.setRole((String) payload.get("role"));
+                return u;
             }
-
-            String hash = passwordEncoder.encode(password);
-            Map<String, Object> payload = new HashMap<>();
-            payload.put("email", email);
-            payload.put("passwordHash", hash);
-            payload.put("name", name == null ? "" : name);
-            payload.put("role", role == null ? "User" : role);
-            payload.put("id", System.currentTimeMillis());
-
-            rtdb.writeData(key, payload).get();
-
-            UserDto u = new UserDto();
-            u.setId(((Long) payload.get("id")));
-            u.setName((String) payload.get("name"));
-            u.setRole((String) payload.get("role"));
-            return u;
         } catch (RuntimeException re) {
             throw re;
         } catch (InterruptedException | ExecutionException e) {
@@ -78,19 +105,28 @@ public class AuthService {
         log.info("Login called for email={}", email);
         try {
             String key = "auth/users/" + keyForEmail(email);
-            var snap = rtdb.readData(key).get();
-            if (snap == null || !snap.exists()) {
-                throw new IllegalArgumentException("Invalid credentials");
+            Map<?, ?> m;
+            if (rtdb.isPresent()) {
+                var snap = rtdb.get().readData(key).get();
+                if (snap == null || !snap.exists()) {
+                    throw new IllegalArgumentException("Invalid credentials");
+                }
+                Object val = snap.getValue();
+                if (!(val instanceof Map)) throw new IllegalArgumentException("Invalid credentials");
+                m = (Map<?, ?>) val;
+            } else {
+                if (!inMemoryUsers.containsKey(key)) throw new IllegalArgumentException("Invalid credentials");
+                m = inMemoryUsers.get(key);
             }
-            Object val = snap.getValue();
-            if (!(val instanceof Map)) throw new IllegalArgumentException("Invalid credentials");
-            Map<?, String> m = (Map<?, String>) val;
+
             String hash = (String) m.get("passwordHash");
             if (hash == null || !passwordEncoder.matches(password, hash)) {
                 throw new IllegalArgumentException("Invalid credentials");
             }
-            String name = (String) m.getOrDefault("name", "");
-            String role = (String) m.getOrDefault("role", "User");
+            Object nameObj = m.get("name");
+            String name = nameObj == null ? "" : String.valueOf(nameObj);
+            Object roleObj = m.get("role");
+            String role = roleObj == null ? "User" : String.valueOf(roleObj);
             Object idObj = m.get("id");
             String idStr = idObj == null ? "" : String.valueOf(idObj);
 

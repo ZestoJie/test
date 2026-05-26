@@ -1,0 +1,25 @@
+Dependency scan summary (quick analysis)
+======================================
+
+Generated from `mvn -DskipTests dependency:tree` output saved earlier.
+
+High-risk items to review first:
+- Jackson (tools.jackson:jackson-databind 3.1.2): prioritize verifying no deserialization CVEs; upgrade to latest 3.1.x or 2.15.x patch if using 2.x code paths.
+- Netty (4.2.12.Final): older Netty versions have had RCE/DoS CVEs; consider updating to a recent 4.2.x patch (check compatibility with other libs).
+- Apache HTTP components (httpclient5 5.5.2): check for CVEs and update to latest patch release.
+- guava (33.3.0-jre): low-to-medium risk; update if advisories apply to used APIs.
+
+Actionable steps:
+1) Run a full CVE scan locally (OWASP dependency-check or Snyk):
+   - `./tools/dependency-scan.sh` (creates REPORTS/dependency-tree.txt)
+   - `mvn org.owasp:dependency-check-maven:check` (may take a few minutes)
+   - Or use `snyk test --all-projects` / GitHub Dependabot for ongoing PRs.
+
+2) Upgrade priority:
+   - Update Jackson-related libraries to latest stable patch.
+   - Update Netty and HTTP Client to recent patches.
+   - Re-run dependency-check after upgrades.
+
+3) Add CVE checks to CI (GitHub Actions or Railway pipeline) and enable automated PRs (Dependabot/Snyk).
+
+Reference: REPORTS/dependency-tree.txt
