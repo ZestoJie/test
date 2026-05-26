@@ -1,4 +1,5 @@
-import React, { useEffect } from "react";
+import React, { useEffect, type JSX } from "react";
+import { Navigate } from "react-router-dom";
 import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 
 import Login from "../../pages/public/Login";
@@ -37,11 +38,28 @@ function Logout() {
   return <div style={{ padding: 20 }}>Logging out...</div>;
 }
 
+function ProtectedRoute({ children }: { children: JSX.Element }) {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <Home />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/logout" element={<Logout />} />
