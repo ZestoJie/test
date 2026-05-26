@@ -9,54 +9,37 @@ import org.springframework.data.redis.connection.lettuce.LettuceClientConfigurat
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.data.redis.core.StringRedisTemplate;
-
 @Configuration
 public class RedisConfiguration {
 
   @Bean
   @ConditionalOnExpression("#{systemEnvironment['REDIS_URL'] != null and systemEnvironment['REDIS_URL'].trim().length() > 0}")
   public LettuceConnectionFactory redisConnectionFactory() {
-    String redisUrl = System.getenv().getOrDefault("REDIS_URL", "").trim();
-    if (redisUrl.isBlank()) {
-      return null;
-    }
-    try {
-      // Expect formats like redis://[:password@]host:port or redis://host:port
-      java.net.URI uri = new java.net.URI(redisUrl);
-      String host = uri.getHost();
-      int port = uri.getPort() == -1 ? 6379 : uri.getPort();
-      String userInfo = uri.getUserInfo();
-      String password = null;
-      if (userInfo != null && userInfo.contains(":")) {
-        password = userInfo.split(":", 2)[1];
-      } else if (userInfo != null) {
-        password = userInfo;
-      }
-      RedisStandaloneConfiguration cfg = new RedisStandaloneConfiguration(host, port);
-      if (password != null && !password.isBlank()) {
-        cfg.setPassword(RedisPassword.of(password));
-      }
 
-      boolean useSsl = "rediss".equalsIgnoreCase(uri.getScheme());
-      if (useSsl) {
-        LettuceClientConfiguration clientConfig = LettuceClientConfiguration.builder()
-            .useSsl()
-            .build();
-        return new LettuceConnectionFactory(cfg, clientConfig);
-      }
+    String redisUrl = System.getenv("REDIS_URL").trim();
 
-      return new LettuceConnectionFactory(cfg);
-    } catch (Exception e) {
-      org.slf4j.LoggerFactory.getLogger(RedisConfiguration.class).warn("Failed to parse REDIS_URL, skipping Redis autoconfig", e);
-      return null;
+    java.net.URI uri = java.net.URI.create(redisUrl);
+
+    RedisStandaloneConfiguration cfg =
+        new RedisStandaloneConfiguration(uri.getHost(),
+                uri.getPort() == -1 ? 6379 : uri.getPort());
+
+    if (uri.getUserInfo() != null) {
+      String password = uri.getUserInfo().split(":", 2)[1];
+      cfg.setPassword(RedisPassword.of(password));
     }
+
+    LettuceClientConfiguration clientConfig =
+        uri.getScheme().equals("rediss")
+            ? LettuceClientConfiguration.builder().useSsl().build()
+            : LettuceClientConfiguration.builder().build();
+
+    return new LettuceConnectionFactory(cfg, clientConfig);
   }
 
   @Bean
   @ConditionalOnBean(LettuceConnectionFactory.class)
   public StringRedisTemplate stringRedisTemplate(LettuceConnectionFactory factory) {
-    var t = new StringRedisTemplate();
-    t.setConnectionFactory(factory);
-    return t;
+    return new StringRedisTemplate(factory);
   }
 }

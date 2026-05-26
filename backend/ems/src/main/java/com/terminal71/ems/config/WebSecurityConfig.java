@@ -41,7 +41,9 @@ public class WebSecurityConfig {
   }
   
   @Bean
-  public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+  public SecurityFilterChain filterChain(
+          HttpSecurity http,
+          StringRedisTemplate redisTemplate) throws Exception {
 
       http.cors(Customizer.withDefaults())
           .csrf(csrf -> csrf.disable())
@@ -59,10 +61,11 @@ public class WebSecurityConfig {
           new com.terminal71.ems.security.SecurityHeadersFilter(),
           UsernamePasswordAuthenticationFilter.class
       );
-
-      // 🔥 Rate limiting BEFORE auth BUT AFTER logging
-      RateLimitingFilter rateLimiter = new RateLimitingFilter(20);
-      http.addFilterBefore(rateLimiter, UsernamePasswordAuthenticationFilter.class);
+      // ✅ REDIS RATE LIMITER (NOW ACTIVE)
+      http.addFilterBefore(
+        new RedisRateLimitingFilter(redisTemplate, 20, java.time.Duration.ofSeconds(1)),
+        UsernamePasswordAuthenticationFilter.class
+      );
 
       // 🔥 JWT LAST (DO NOT affect login/register)
       String jwtSecret = System.getenv().getOrDefault("JWT_SECRET", "");
