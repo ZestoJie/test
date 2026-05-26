@@ -82,3 +82,24 @@ export async function login(email: string, password: string) {
     loginInFlight = false;
   }
 }
+export function showToast(message: string, type: "error" | "info" = "error") {
+  const toast = document.createElement("div");
+
+  toast.innerText = message;
+
+  toast.style.position = "fixed";
+  toast.style.bottom = "20px";
+  toast.style.right = "20px";
+  toast.style.padding = "12px 16px";
+  toast.style.borderRadius = "10px";
+  toast.style.color = "white";
+  toast.style.zIndex = "9999";
+  toast.style.fontSize = "14px";
+  toast.style.boxShadow = "0 4px 12px rgba(0,0,0,0.2)";
+
+  toast.style.background = type === "error" ? "#ef4444" : "#3b82f6";
+
+  document.body.appendChild(toast);
+
+  setTimeout(() => toast.remove(), 2500);
+}

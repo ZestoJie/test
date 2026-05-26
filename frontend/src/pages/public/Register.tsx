@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { register } from "../../api/auth";
+import { register, showToast } from "../../api/auth";
 
 export default function Register() {
   const [email, setEmail] = useState("");
@@ -9,14 +9,18 @@ export default function Register() {
   const handleRegister = async () => {
     const res = await register(email, password, name);
 
-    if (res?.user) {
-      alert(
-        "Registered user: " + (res.user.email ?? res.user.name ?? "unknown"),
-      );
+    // ❌ error handling (including cooldown)
+    if (!res || res.status >= 400) {
+      showToast(res?.error || "Registration failed", "error");
       return;
     }
 
-    alert("Registration failed: " + (res?.error || "Unknown error"));
+    if (!res.user) {
+      showToast("Registration failed", "error");
+      return;
+    }
+
+    showToast(`Registered: ${res.user.email || res.user.name}`, "info");
   };
 
   return (
@@ -34,8 +38,4 @@ export default function Register() {
       <button onClick={handleRegister}>Register</button>
     </div>
   );
-}
-export function logout() {
-  localStorage.removeItem("token");
-  localStorage.removeItem("user");
 }

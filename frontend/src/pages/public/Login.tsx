@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { login } from "../../api/auth";
+import { login, showToast } from "../../api/auth";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -8,13 +8,23 @@ export default function Login() {
   const handleLogin = async () => {
     const res = await login(email, password);
 
-    if (res.token) {
-      localStorage.setItem("token", res.token);
-      localStorage.setItem("user", JSON.stringify(res.user));
-      alert("Login success!");
-    } else {
-      alert("Login failed");
+    // ❌ rate limit or frontend errors
+    if (!res || res.status >= 400) {
+      showToast(res?.error || "Login failed", "error");
+      return;
     }
+
+    // ❌ backend error response
+    if (!res.token) {
+      showToast("Invalid credentials", "error");
+      return;
+    }
+
+    // ✅ success
+    localStorage.setItem("token", res.token);
+    localStorage.setItem("user", JSON.stringify(res.user));
+
+    showToast("Login successful!", "info");
   };
 
   return (
