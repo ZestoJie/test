@@ -2,100 +2,54 @@ import { api } from "./client";
 
 let lastLoginTime = 0;
 let loginInFlight = false;
-const BASE_URL =
-  import.meta.env.VITE_API_URL ||
-  "https://terminal71-production.up.railway.app";
 
-const COOLDOWN_MS = 500; // 2 req/sec
+const COOLDOWN_MS = 1000; // 1 req/sec
 let registerInFlight = false;
+
 export async function register(email: string, password: string, name: string) {
-  if (registerInFlight) {
-    return {
-      status: 429,
-      error: "Request already in progress",
-    };
-  }
-
-  registerInFlight = true;
-
   try {
-    const res = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, name, role: "User" }),
+    const res = await api.post("/api/auth/register", {
+      email,
+      password,
+      name,
+      role: "User",
     });
 
-    const data = await res.json().catch(() => null);
-
-    if (!res.ok) {
-      return {
-        status: res.status,
-        error: data?.message || data?.error || "Registration failed",
-      };
-    }
-
     return {
-      status: 200,
-      user: data.user,
+      status: res.status,
+      user: res.data?.user,
     };
-  } catch {
+  } catch (err: any) {
     return {
-      status: 500,
-      error: "Network error",
+      status: err?.response?.status || 500,
+      error:
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        "Registration failed",
     };
-  } finally {
-    registerInFlight = false;
   }
 }
 
 export async function login(email: string, password: string) {
-  const now = Date.now();
-
-  if (now - lastLoginTime < COOLDOWN_MS) {
-    return {
-      status: 429,
-      error: "Please wait before trying again.",
-    };
-  }
-
-  if (loginInFlight) {
-    return {
-      status: 429,
-      error: "Login already in progress",
-    };
-  }
-
-  lastLoginTime = now;
-  loginInFlight = true;
-
   try {
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
+    const res = await api.post("/api/auth/login", {
+      email,
+      password,
     });
 
-    const data = await res.json().catch(() => null);
-
-    if (!res.ok) {
-      return {
-        status: res.status,
-        error: data?.message || data?.error || "Login failed",
-      };
-    }
-
     return {
-      status: 200,
-      token: data.token,
-      user: data.user,
+      status: res.status,
+      token: res.data?.token,
+      user: res.data?.user,
     };
-  } catch {
+  } catch (err: any) {
     return {
-      status: 500,
-      error: "Network error",
+      status: err?.response?.status || 500,
+      error:
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        "Login failed",
     };
-  } finally {
-    loginInFlight = false;
   }
 }
 
