@@ -5,21 +5,29 @@ export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleRegister = async () => {
-    const res = await register(email, password, name);
+    if (loading) return;
+    setLoading(true);
 
-    if (!res || res.status >= 400) {
-      showToast(res?.error || "Registration failed", "error");
-      return;
+    try {
+      const res = await register(email, password, name);
+
+      if (!res || res.status >= 400) {
+        showToast(res?.error || "Registration failed", "error");
+        return;
+      }
+
+      if (!res.user) {
+        showToast("Registration failed", "error");
+        return;
+      }
+
+      showToast(`Registered: ${res.user.email || res.user.name}`, "info");
+    } finally {
+      setLoading(false);
     }
-
-    if (!res.user) {
-      showToast("Registration failed", "error");
-      return;
-    }
-
-    showToast(`Registered: ${res.user.email || res.user.name}`, "info");
   };
 
   return (
@@ -34,7 +42,9 @@ export default function Register() {
         onChange={(e) => setPassword(e.target.value)}
       />
 
-      <button onClick={handleRegister}>Register</button>
+      <button onClick={handleRegister} disabled={loading}>
+        {loading ? "Registering..." : "Register"}
+      </button>
     </div>
   );
 }
