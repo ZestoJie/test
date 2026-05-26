@@ -7,12 +7,14 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @Service
+@ConditionalOnBean(FirebaseDatabase.class)
 public class FirebaseRealtimeService {
 
   private static final Logger log = LoggerFactory.getLogger(FirebaseRealtimeService.class);

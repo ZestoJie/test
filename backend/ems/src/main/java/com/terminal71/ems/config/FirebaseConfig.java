@@ -33,6 +33,14 @@ public class FirebaseConfig {
             // 2) FIREBASE_SERVICE_ACCOUNT_B64 — a base64-encoded JSON string (single-line, safe for CLI)
             String svcPath = System.getenv("FIREBASE_SERVICE_ACCOUNT");
             String svcB64 = System.getenv("FIREBASE_SERVICE_ACCOUNT_B64");
+            if ((svcPath == null || svcPath.isBlank()) && System.getenv("FIREBASE_SERVIC_ACCOUNT") != null) {
+                svcPath = System.getenv("FIREBASE_SERVIC_ACCOUNT");
+                log.warn("FIREBASE_SERVIC_ACCOUNT env var is deprecated/misspelled. Please use FIREBASE_SERVICE_ACCOUNT.");
+            }
+            if ((svcB64 == null || svcB64.isBlank()) && System.getenv("FIREBASE_SERVIC_ACCOUNT_B64") != null) {
+                svcB64 = System.getenv("FIREBASE_SERVIC_ACCOUNT_B64");
+                log.warn("FIREBASE_SERVIC_ACCOUNT_B64 env var is deprecated/misspelled. Please use FIREBASE_SERVICE_ACCOUNT_B64.");
+            }
             InputStream serviceAccount = null;
 
             // If a base64 secret is provided, decode it first (useful for CLI single-line secrets)
@@ -110,6 +118,7 @@ public class FirebaseConfig {
     }
 
     @Bean
+    @ConditionalOnBean(FirebaseApp.class)
     public FirebaseDatabase firebaseDatabase() {
         if (FirebaseApp.getApps().isEmpty()) {
             log.warn("No FirebaseApp initialized; not creating FirebaseDatabase bean");

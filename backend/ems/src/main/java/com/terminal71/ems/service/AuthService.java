@@ -28,7 +28,7 @@ public class AuthService {
     // lightweight in-memory fallback for local/dev when Firebase is not configured
     private final java.util.concurrent.ConcurrentMap<String, Map<String, Object>> inMemoryUsers = new java.util.concurrent.ConcurrentHashMap<>();
 
-    public AuthService(FirebaseRealtimeService rtdb) {
+    public AuthService(@org.springframework.lang.Nullable FirebaseRealtimeService rtdb) {
         this.rtdb = java.util.Optional.ofNullable(rtdb);
 
         String secret = System.getenv("JWT_SECRET");

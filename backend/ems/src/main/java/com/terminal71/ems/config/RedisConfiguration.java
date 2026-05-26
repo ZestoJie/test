@@ -5,12 +5,16 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisPassword;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
+import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
 @Configuration
 public class RedisConfiguration {
 
   @Bean
+  @ConditionalOnExpression("#{systemEnvironment['REDIS_URL'] != null and systemEnvironment['REDIS_URL'].trim().length() > 0}")
   public LettuceConnectionFactory redisConnectionFactory() {
     String redisUrl = System.getenv().getOrDefault("REDIS_URL", "").trim();
     if (redisUrl.isBlank()) {
@@ -32,6 +36,15 @@ public class RedisConfiguration {
       if (password != null && !password.isBlank()) {
         cfg.setPassword(RedisPassword.of(password));
       }
+
+      boolean useSsl = "rediss".equalsIgnoreCase(uri.getScheme());
+      if (useSsl) {
+        LettuceClientConfiguration clientConfig = LettuceClientConfiguration.builder()
+            .useSsl()
+            .build();
+        return new LettuceConnectionFactory(cfg, clientConfig);
+      }
+
       return new LettuceConnectionFactory(cfg);
     } catch (Exception e) {
       org.slf4j.LoggerFactory.getLogger(RedisConfiguration.class).warn("Failed to parse REDIS_URL, skipping Redis autoconfig", e);
@@ -40,8 +53,8 @@ public class RedisConfiguration {
   }
 
   @Bean
+  @ConditionalOnBean(LettuceConnectionFactory.class)
   public StringRedisTemplate stringRedisTemplate(LettuceConnectionFactory factory) {
-    if (factory == null) return null;
     var t = new StringRedisTemplate();
     t.setConnectionFactory(factory);
     return t;

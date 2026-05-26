@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -40,10 +42,34 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 var authToken = new UsernamePasswordAuthenticationToken(subject, null, authorities);
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             } catch (Exception e) {
-                log.warn("Invalid JWT token: {}", e.getMessage());
-                // If token invalid, continue without authentication (will be rejected by security)
+                log.warn("Invalid JWT token: {}. Trying Firebase ID token fallback.", e.getMessage());
+                if (!tryAuthenticateFirebaseToken(token)) {
+                    log.warn("Invalid Firebase token or Firebase not configured.");
+                }
             }
         }
         filterChain.doFilter(request, response);
+    }
+
+    private boolean tryAuthenticateFirebaseToken(String token) {
+        try {
+            if (com.google.firebase.FirebaseApp.getApps().isEmpty()) {
+                return false;
+            }
+            FirebaseToken decoded = FirebaseAuth.getInstance().verifyIdToken(token);
+            String subject = decoded.getUid();
+            var claims = decoded.getClaims();
+            String role = "User";
+            if (claims.containsKey("role") && claims.get("role") != null) {
+                role = claims.get("role").toString();
+            }
+            var authorities = Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()));
+            var authToken = new UsernamePasswordAuthenticationToken(subject, null, authorities);
+            SecurityContextHolder.getContext().setAuthentication(authToken);
+            return true;
+        } catch (Exception e) {
+            log.debug("Firebase token verification failed", e);
+            return false;
+        }
     }
 }
