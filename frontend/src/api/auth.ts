@@ -82,6 +82,7 @@ export async function login(email: string, password: string) {
     loginInFlight = false;
   }
 }
+
 export function showToast(message: string, type: "error" | "info" = "error") {
   const toast = document.createElement("div");
 
