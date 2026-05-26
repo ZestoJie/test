@@ -1,6 +1,11 @@
 import React, { useEffect, type JSX } from "react";
-import { Navigate } from "react-router-dom";
-import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+} from "react-router-dom";
 
 import Login from "../../pages/public/Login";
 import Register from "../../pages/public/Register";
@@ -8,21 +13,32 @@ import Dashboard from "../../pages/public/Dashboard";
 
 function Home() {
   const navigate = useNavigate();
+
   const token = localStorage.getItem("token");
   const rawUser = localStorage.getItem("user");
-  const user = rawUser ? JSON.parse(rawUser) : null;
+
+  let user = null;
+
+  try {
+    user = rawUser ? JSON.parse(rawUser) : null;
+  } catch {
+    user = null;
+  }
 
   return (
     <div style={{ padding: 20 }}>
       <h1>{token ? `Welcome back, ${user?.name ?? "user"}!` : "Welcome!"}</h1>
+
       {token ? (
         <div style={{ display: "flex", gap: 12 }}>
-          <button onClick={() => navigate("/logout")}>Logout</button>
           <button onClick={() => navigate("/dashboard")}>Dashboard</button>
+
+          <button onClick={() => navigate("/logout")}>Logout</button>
         </div>
       ) : (
         <div style={{ display: "flex", gap: 12 }}>
           <button onClick={() => navigate("/login")}>Login</button>
+
           <button onClick={() => navigate("/register")}>Register</button>
         </div>
       )}
@@ -36,6 +52,7 @@ function Logout() {
   useEffect(() => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+
     navigate("/");
   }, [navigate]);
 
@@ -51,18 +68,19 @@ function ProtectedRoute({ children }: { children: JSX.Element }) {
 
   return children;
 }
+
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* PUBLIC INDEX */}
+        {/* ALWAYS PUBLIC */}
         <Route path="/" element={<Home />} />
 
         {/* PUBLIC AUTH */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
 
-        {/* PROTECTED AREA */}
+        {/* PROTECTED DASHBOARD */}
         <Route
           path="/dashboard"
           element={
@@ -72,6 +90,7 @@ export default function App() {
           }
         />
 
+        {/* LOGOUT */}
         <Route path="/logout" element={<Logout />} />
       </Routes>
     </BrowserRouter>

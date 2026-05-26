@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { register, showToast } from "../../api/auth";
+import { useNavigate } from "react-router-dom";
 
 export default function Register() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -41,7 +43,9 @@ export default function Register() {
         type="password"
         onChange={(e) => setPassword(e.target.value)}
       />
-
+      <div>
+        <button onClick={() => navigate("/")}>Index</button>
+      </div>
       <button onClick={handleRegister} disabled={loading}>
         {loading ? "Registering..." : "Register"}
       </button>
