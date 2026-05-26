@@ -2,6 +2,9 @@ import { api } from "./client";
 
 let lastLoginTime = 0;
 let loginInFlight = false;
+const BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  "https://terminal71-production.up.railway.app";
 
 const COOLDOWN_MS = 500; // 2 req/sec
 let registerInFlight = false;
