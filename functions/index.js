@@ -11,9 +11,7 @@ const db = admin.database();
 const app = express();
 app.use(express.json());
 
-// allow only your hosting origin by default via env in firewall; allow all from hosting rewrite
-const allowedOrigin =
-  process.env.FRONTEND_ORIGIN || "https://terminal71-ems.web.app";
+const allowedOrigin = process.env.FRONTEND_ORIGIN;
 app.use(cors({ origin: allowedOrigin }));
 
 function keyForEmail(email) {
