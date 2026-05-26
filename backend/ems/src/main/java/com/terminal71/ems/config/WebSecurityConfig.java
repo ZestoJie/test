@@ -49,7 +49,8 @@ public class WebSecurityConfig {
     http.authorizeHttpRequests(authz -> authz
         .requestMatchers("/api/auth/**").permitAll()
         .requestMatchers("/api/v1/firebase/rtdb/health").permitAll()
-        .requestMatchers("/api/**").authenticated()
+        .requestMatchers("/api/auth/**").permitAll()
+        .requestMatchers("/api/**").permitAll()
         .anyRequest().permitAll()
     );
 
@@ -82,14 +83,14 @@ public class WebSecurityConfig {
       try {
         var ctx = org.springframework.web.context.ContextLoader.getCurrentWebApplicationContext();
         StringRedisTemplate redisTemplate = ctx.getBean(StringRedisTemplate.class);
-        RedisRateLimitingFilter redisRateLimiter = new RedisRateLimitingFilter(redisTemplate, 200, java.time.Duration.ofMinutes(1));
+        RedisRateLimitingFilter redisRateLimiter = new RedisRateLimitingFilter(redisTemplate, 1, java.time.Duration.ofSeconds(1));
         http.addFilterBefore(redisRateLimiter, JwtAuthenticationFilter.class);
       } catch (Exception e) {
-        RateLimitingFilter rateLimiter = new RateLimitingFilter(100);
+        RateLimitingFilter rateLimiter = new RateLimitingFilter(30);
         http.addFilterBefore(rateLimiter, JwtAuthenticationFilter.class);
       }
     } else {
-      RateLimitingFilter rateLimiter = new RateLimitingFilter(100);
+      RateLimitingFilter rateLimiter = new RateLimitingFilter(20);
       http.addFilterBefore(rateLimiter, JwtAuthenticationFilter.class);
     }
 
