@@ -16,10 +16,10 @@
 
 ### Key Updates:
 
-- Java upgraded from 21 → 25
+- Java 21
 - Firebase Admin SDK: 9.4.0
-- All Spring Boot starters compatible with Java 25
-- Maven compiler configured for Java 25
+- All Spring Boot starters compatible with Java 21
+- Maven compiler configured for Java 21
 
 ### Backend Location:
 
