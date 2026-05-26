@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
 
 import Login from "../../pages/public/Login";
 import Register from "../../pages/public/Register";
+import Dashboard from "../../pages/public/Dashboard";
 
 function Home() {
   const navigate = useNavigate();
@@ -47,21 +48,27 @@ function ProtectedRoute({ children }: { children: JSX.Element }) {
 
   return children;
 }
-
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* PUBLIC INDEX */}
+        <Route path="/" element={<Home />} />
+
+        {/* PUBLIC AUTH */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+
+        {/* PROTECTED AREA */}
         <Route
-          path="/"
+          path="/dashboard"
           element={
             <ProtectedRoute>
-              <Home />
+              <Dashboard />
             </ProtectedRoute>
           }
         />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+
         <Route path="/logout" element={<Logout />} />
       </Routes>
     </BrowserRouter>

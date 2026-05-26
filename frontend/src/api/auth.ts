@@ -74,3 +74,22 @@ export function showToast(message: string, type: "error" | "info" = "error") {
 
   setTimeout(() => toast.remove(), 2500);
 }
+
+export async function dashboard() {
+  try {
+    const res = await api.get("/api/dashboard");
+
+    return {
+      status: res.status,
+      data: res.data,
+    };
+  } catch (err: any) {
+    return {
+      status: err?.response?.status || 500,
+      error:
+        err?.response?.data?.message ||
+        err?.response?.data?.error ||
+        "Dashboard fetch failed",
+    };
+  }
+}
