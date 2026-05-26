@@ -1,40 +1,46 @@
 import { api } from "./client";
-
 export async function register(email: string, password: string, name: string) {
-  try {
-    const res = await api.post("/api/auth/register", {
-      email,
-      password,
-      name,
-      role: "User",
-    });
+  const res = await fetch("/api/auth/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password, name, role: "User" }),
+  });
 
-    return res.data;
-  } catch (err: any) {
-    return {
-      error:
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        "Registration failed",
-    };
+  const text = await res.text();
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { error: text };
   }
 }
 
-// LOGIN
 export async function login(email: string, password: string) {
-  try {
-    const res = await api.post("/api/auth/login", {
-      email,
-      password,
-    });
+  const res = await fetch("/api/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
 
-    return res.data;
-  } catch (err: any) {
+  const text = await res.text();
+
+  let data: any;
+
+  try {
+    data = JSON.parse(text);
+  } catch {
+    // 👇 handles 429 or HTML/plain text errors
     return {
-      error:
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        "Login failed",
+      error: text,
+      status: res.status,
     };
   }
+
+  if (!res.ok) {
+    return {
+      error: data?.message || data?.error || "Request failed",
+      status: res.status,
+    };
+  }
+  return data;
 }
