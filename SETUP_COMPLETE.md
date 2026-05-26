@@ -31,7 +31,7 @@ backend/ems/
 
 ```powershell
 cd backend/ems
-$env:JAVA_HOME = "C:\Users\Apry\AppData\Local\jdks\jdk-25.0.2(1)"
+$env:JAVA_HOME = "PATH"
 mvn clean install
 ```
 
@@ -98,7 +98,7 @@ npm run lint
 
 ```powershell
 cd backend/ems
-$env:JAVA_HOME = "C:\Users\Apry\AppData\Local\jdks\jdk-25.0.2(1)"
+$env:JAVA_HOME = "PATH"
 mvn spring-boot:run
 ```
 
@@ -110,7 +110,7 @@ npm run dev
 ```
 
 The frontend will typically run on: `http://localhost:5173`
-The backend will typically run on: `http://localhost:8080`
+The backend will typically run on: `http://localhost:8081`
 
 ---
 
@@ -170,8 +170,8 @@ project-root/
 ### If Java 25 not recognized:
 
 ```powershell
-$env:JAVA_HOME = "C:\Users\Apry\AppData\Local\jdks\jdk-25.0.2(1)"
-$env:Path = "C:\Users\Apry\AppData\Local\jdks\jdk-25.0.2(1)\bin;" + $env:Path
+$env:JAVA_HOME = "PATH"
+$env:Path = "PATH/bin" + $env:Path
 java -version
 ```
 
@@ -207,8 +207,3 @@ npm install
 4. **Start development**: Begin coding!
 
 ---
-
-## Environment Created By
-
-GitHub Copilot Setup Agent
-Date: May 25, 2026
