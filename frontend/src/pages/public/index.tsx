@@ -16,7 +16,10 @@ function Home() {
     <div style={{ padding: 20 }}>
       <h1>{token ? `Welcome back, ${user?.name ?? "user"}!` : "Welcome!"}</h1>
       {token ? (
-        <button onClick={() => navigate("/logout")}>Logout</button>
+        <div style={{ display: "flex", gap: 12 }}>
+          <button onClick={() => navigate("/logout")}>Logout</button>
+          <button onClick={() => navigate("/dashboard")}>Dashboard</button>
+        </div>
       ) : (
         <div style={{ display: "flex", gap: 12 }}>
           <button onClick={() => navigate("/login")}>Login</button>
