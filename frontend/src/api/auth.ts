@@ -1,7 +1,6 @@
 import { env } from "../config/env";
-
-// If VITE_API_URL is set use that, otherwise build relative URLs (e.g. `/api/...`).
-const BASE_URL = env.apiBaseUrl?.replace(/\/$/, "") || "";
+const BASE_URL =
+  env.apiBaseUrl || "https://terminal71-production.up.railway.app";
 const buildUrl = (path: string) => {
   const p = path.startsWith("/") ? path : `/${path}`;
   // If BASE_URL already prefixed in the path, return path as-is to avoid duplication
@@ -26,5 +25,11 @@ export async function login(email: string, password: string) {
     body: JSON.stringify({ email, password }),
   });
 
-  return res.json(); // returns token + user
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data?.error || "Login failed");
+  }
+
+  return data;
 }
