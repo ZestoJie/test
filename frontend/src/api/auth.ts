@@ -5,10 +5,12 @@ let loginInFlight = false;
 
 const COOLDOWN_MS = 500; // 2 req/sec
 let registerInFlight = false;
-
 export async function register(email: string, password: string, name: string) {
   if (registerInFlight) {
-    return { error: "Request already in progress", status: 429 };
+    return {
+      status: 429,
+      error: "Request already in progress",
+    };
   }
 
   registerInFlight = true;
@@ -20,33 +22,43 @@ export async function register(email: string, password: string, name: string) {
       body: JSON.stringify({ email, password, name, role: "User" }),
     });
 
-    const text = await res.text();
+    const data = await res.json().catch(() => null);
 
-    try {
-      return JSON.parse(text);
-    } catch {
-      return { error: text, status: res.status };
+    if (!res.ok) {
+      return {
+        status: res.status,
+        error: data?.message || data?.error || "Registration failed",
+      };
     }
+
+    return {
+      status: 200,
+      user: data.user,
+    };
+  } catch {
+    return {
+      status: 500,
+      error: "Network error",
+    };
   } finally {
     registerInFlight = false;
   }
 }
+
 export async function login(email: string, password: string) {
   const now = Date.now();
 
-  // 🚫 cooldown check
   if (now - lastLoginTime < COOLDOWN_MS) {
     return {
-      error: "Please wait before trying again.",
       status: 429,
+      error: "Please wait before trying again.",
     };
   }
 
-  // 🚫 prevent concurrent requests
   if (loginInFlight) {
     return {
-      error: "Login already in progress",
       status: 429,
+      error: "Login already in progress",
     };
   }
 
@@ -60,24 +72,25 @@ export async function login(email: string, password: string) {
       body: JSON.stringify({ email, password }),
     });
 
-    const text = await res.text();
-
-    let data: any;
-
-    try {
-      data = JSON.parse(text);
-    } catch {
-      return { error: text, status: res.status };
-    }
+    const data = await res.json().catch(() => null);
 
     if (!res.ok) {
       return {
-        error: data?.message || data?.error || "Request failed",
         status: res.status,
+        error: data?.message || data?.error || "Login failed",
       };
     }
 
-    return data;
+    return {
+      status: 200,
+      token: data.token,
+      user: data.user,
+    };
+  } catch {
+    return {
+      status: 500,
+      error: "Network error",
+    };
   } finally {
     loginInFlight = false;
   }

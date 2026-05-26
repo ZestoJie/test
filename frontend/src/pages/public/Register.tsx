@@ -9,7 +9,6 @@ export default function Register() {
   const handleRegister = async () => {
     const res = await register(email, password, name);
 
-    // ❌ error handling (including cooldown)
     if (!res || res.status >= 400) {
       showToast(res?.error || "Registration failed", "error");
       return;
