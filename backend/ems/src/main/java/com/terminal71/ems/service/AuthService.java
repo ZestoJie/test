@@ -4,8 +4,8 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ExecutionException;
+import java.util.Locale;
 
 import com.google.firebase.database.DataSnapshot;
 import org.slf4j.Logger;
@@ -22,14 +22,17 @@ public class AuthService {
 
     private static final Logger log = LoggerFactory.getLogger(AuthService.class);
     private final java.util.Optional<FirebaseRealtimeService> rtdb;
+    private final java.util.Optional<FirebaseFirestoreService> firestore;
     private final JwtUtil jwtUtil;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     // lightweight in-memory fallback for local/dev when Firebase is not configured
     private final java.util.concurrent.ConcurrentMap<String, Map<String, Object>> inMemoryUsers = new java.util.concurrent.ConcurrentHashMap<>();
 
-    public AuthService(@org.springframework.lang.Nullable FirebaseRealtimeService rtdb) {
+    public AuthService(@org.springframework.lang.Nullable FirebaseRealtimeService rtdb,
+            @org.springframework.lang.Nullable FirebaseFirestoreService firestore) {
         this.rtdb = java.util.Optional.ofNullable(rtdb);
+        this.firestore = java.util.Optional.ofNullable(firestore);
 
         String secret = System.getenv("JWT_SECRET");
         if (secret == null || secret.isBlank()) {
@@ -53,8 +56,30 @@ public class AuthService {
             throw new IllegalArgumentException("email and password required");
         }
         try {
-            String key = "auth/users/" + keyForEmail(email);
-            if (rtdb.isPresent()) {
+            if (firestore.isPresent()) {
+                String key = docIdForEmail(email);
+                var existing = firestore.get().readDocument("auth_users", key);
+                if (existing != null && existing.exists()) {
+                    throw new IllegalStateException("User already exists");
+                }
+
+                String hash = passwordEncoder.encode(password);
+                Map<String, Object> payload = new HashMap<>();
+                payload.put("email", email);
+                payload.put("passwordHash", hash);
+                payload.put("name", name == null ? "" : name);
+                payload.put("role", role == null ? "User" : role);
+                payload.put("id", System.currentTimeMillis());
+
+                firestore.get().writeDocument("auth_users", key, payload);
+
+                UserDto u = new UserDto();
+                u.setId(((Long) payload.get("id")));
+                u.setName((String) payload.get("name"));
+                u.setRole((String) payload.get("role"));
+                return u;
+            } else if (rtdb.isPresent()) {
+                String key = "auth/users/" + keyForEmail(email);
                 var existing = rtdb.get().readData(key).get();
                 if (existing != null && existing.exists()) {
                     throw new IllegalStateException("User already exists");
@@ -77,6 +102,7 @@ public class AuthService {
                 return u;
             } else {
                 // local in-memory fallback
+                String key = "auth/users/" + keyForEmail(email);
                 if (inMemoryUsers.containsKey(key))
                     throw new IllegalStateException("User already exists");
                 String hash = passwordEncoder.encode(password);
@@ -102,7 +128,6 @@ public class AuthService {
         }
     }
 
-    @SuppressWarnings("unchecked")
     public Map<String, Object> login(String login, String password) {
         log.info("Login called for login={}", login);
         try {
@@ -146,7 +171,50 @@ public class AuthService {
             throw new IllegalArgumentException("Invalid credentials");
         }
 
-        if (rtdb.isPresent()) {
+        if (firestore.isPresent()) {
+            if (looksLikeEmail(login)) {
+                String key = docIdForEmail(login);
+                var snap = firestore.get().readDocument("auth_users", key);
+                if (snap != null && snap.exists()) {
+                    Object val = snap.getData();
+                    if (val instanceof Map) {
+                        return (Map<?, ?>) val;
+                    }
+                }
+            }
+
+            var byEmail = firestore.get().queryCollection("auth_users", "email", login);
+            if (byEmail != null && !byEmail.isEmpty()) {
+                var doc = byEmail.getDocuments().get(0);
+                Object val = doc.getData();
+                if (val instanceof Map) {
+                    return (Map<?, ?>) val;
+                }
+            }
+
+            var byName = firestore.get().queryCollection("auth_users", "name", login);
+            if (byName != null && !byName.isEmpty()) {
+                var doc = byName.getDocuments().get(0);
+                Object val = doc.getData();
+                if (val instanceof Map) {
+                    return (Map<?, ?>) val;
+                }
+            }
+
+            // Firestore queries are case-sensitive; fall back to a complete scan if needed.
+            var allDocs = firestore.get().getAllDocuments("auth_users");
+            for (var doc : allDocs) {
+                Object val = doc.getData();
+                if (val instanceof Map) {
+                    Map<?, ?> candidate = (Map<?, ?>) val;
+                    String candidateEmail = valueOf(candidate.get("email"));
+                    String candidateName = valueOf(candidate.get("name"));
+                    if (login.equalsIgnoreCase(candidateEmail) || login.equalsIgnoreCase(candidateName)) {
+                        return candidate;
+                    }
+                }
+            }
+        } else if (rtdb.isPresent()) {
             if (looksLikeEmail(login)) {
                 String key = "auth/users/" + keyForEmail(login);
                 var snap = rtdb.get().readData(key).get();
@@ -192,6 +260,14 @@ public class AuthService {
 
     private static boolean looksLikeEmail(String login) {
         return login != null && login.contains("@");
+    }
+
+    private static String docIdForEmail(String email) {
+        if (email == null)
+            return "";
+        return java.util.Base64.getUrlEncoder()
+                .withoutPadding()
+                .encodeToString(email.trim().toLowerCase(Locale.ROOT).getBytes(StandardCharsets.UTF_8));
     }
 
     private static String valueOf(Object obj) {
