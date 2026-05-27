@@ -6,6 +6,12 @@ interface ErrorResponse {
   error?: string;
 }
 
+export interface User {
+  email?: string;
+  name?: string;
+  [key: string]: unknown;
+}
+
 export type ApiError = {
   status: number;
   error: string;
@@ -13,13 +19,13 @@ export type ApiError = {
 
 export type RegisterSuccess = {
   status: number;
-  user: any;
+  user?: User;
 };
 
 export type LoginSuccess = {
   status: number;
-  token: any;
-  user: any;
+  token?: string;
+  user?: User;
 };
 
 export type RegisterResult = RegisterSuccess | ApiError;
