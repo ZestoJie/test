@@ -6,7 +6,26 @@ interface ErrorResponse {
   error?: string;
 }
 
-function parseAxiosError(err: unknown, fallbackMessage: string) {
+export type ApiError = {
+  status: number;
+  error: string;
+};
+
+export type RegisterSuccess = {
+  status: number;
+  user: any;
+};
+
+export type LoginSuccess = {
+  status: number;
+  token: any;
+  user: any;
+};
+
+export type RegisterResult = RegisterSuccess | ApiError;
+export type LoginResult = LoginSuccess | ApiError;
+
+function parseAxiosError(err: unknown, fallbackMessage: string): ApiError {
   if (axios.isAxiosError(err)) {
     const responseData = err.response?.data as ErrorResponse | undefined;
 
@@ -22,7 +41,11 @@ function parseAxiosError(err: unknown, fallbackMessage: string) {
   };
 }
 
-export async function register(email: string, password: string, name: string) {
+export async function register(
+  email: string,
+  password: string,
+  name: string,
+): Promise<RegisterResult> {
   try {
     const res = await api.post("/api/auth/register", {
       email,
@@ -40,7 +63,7 @@ export async function register(email: string, password: string, name: string) {
   }
 }
 
-export async function login(login: string, password: string) {
+export async function login(login: string, password: string): Promise<LoginResult> {
   try {
     const res = await api.post("/api/auth/login", {
       login,

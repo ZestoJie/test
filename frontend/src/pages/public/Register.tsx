@@ -16,8 +16,13 @@ export default function Register() {
     try {
       const res = await register(email, password, name);
 
-      if (!res || res.status >= 400) {
-        showToast(res?.error || "Registration failed", "error");
+      if (!res) {
+        showToast("Registration failed", "error");
+        return;
+      }
+
+      if ("error" in res) {
+        showToast(res.error, "error");
         return;
       }
 

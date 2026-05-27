@@ -16,8 +16,13 @@ export default function Login() {
     try {
       const res = await loginApi(login, password);
 
-      if (!res || res.status >= 400) {
-        showToast(res?.error || "Login failed", "error");
+      if (!res) {
+        showToast("Login failed", "error");
+        return;
+      }
+
+      if ("error" in res) {
+        showToast(res.error, "error");
         return;
       }
 
