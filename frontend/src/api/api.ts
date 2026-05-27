@@ -9,7 +9,6 @@ const buildUrl = (path: string) => {
   return `${BASE_URL}${p}`;
 };
 
-// 🔥 NEW: central auth header
 const authHeaders = () => {
   const token = localStorage.getItem("token");
 

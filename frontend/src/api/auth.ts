@@ -1,10 +1,26 @@
+import axios from "axios";
 import { api } from "./client";
 
-let lastLoginTime = 0;
-let loginInFlight = false;
+interface ErrorResponse {
+  message?: string;
+  error?: string;
+}
 
-const COOLDOWN_MS = 1000; // 1 req/sec
-let registerInFlight = false;
+function parseAxiosError(err: unknown, fallbackMessage: string) {
+  if (axios.isAxiosError(err)) {
+    const responseData = err.response?.data as ErrorResponse | undefined;
+
+    return {
+      status: err.response?.status ?? 500,
+      error: responseData?.message ?? responseData?.error ?? fallbackMessage,
+    };
+  }
+
+  return {
+    status: 500,
+    error: fallbackMessage,
+  };
+}
 
 export async function register(email: string, password: string, name: string) {
   try {
@@ -19,14 +35,8 @@ export async function register(email: string, password: string, name: string) {
       status: res.status,
       user: res.data?.user,
     };
-  } catch (err: any) {
-    return {
-      status: err?.response?.status || 500,
-      error:
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        "Registration failed",
-    };
+  } catch (err: unknown) {
+    return parseAxiosError(err, "Registration failed");
   }
 }
 
@@ -42,14 +52,8 @@ export async function login(login: string, password: string) {
       token: res.data?.token,
       user: res.data?.user,
     };
-  } catch (err: any) {
-    return {
-      status: err?.response?.status || 500,
-      error:
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        "Login failed",
-    };
+  } catch (err: unknown) {
+    return parseAxiosError(err, "Login failed");
   }
 }
 
@@ -83,13 +87,7 @@ export async function dashboard() {
       status: res.status,
       data: res.data,
     };
-  } catch (err: any) {
-    return {
-      status: err?.response?.status || 500,
-      error:
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        "Dashboard fetch failed",
-    };
+  } catch (err: unknown) {
+    return parseAxiosError(err, "Dashboard fetch failed");
   }
 }
